@@ -1,6 +1,6 @@
 name: Daily case video
 
-# One voiced case video a day. Rendered here (public repo, free minutes), then
+# One voiced case video every second day, alongside the two daily reels. Rendered here (public repo, free minutes), then
 # the site emails an approval link. Nothing posts until that link is clicked,
 # so GitHub's late-running crons do not matter.
 on:
@@ -29,6 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
+      # Every second day. A */2 cron resets each month (31st then 1st), so count days instead.
+      - name: Is today a case day
+        if: github.event_name == 'schedule'
+        run: |
+          if [ $(( $(date -u +%s) / 86400 % 2 )) -ne 0 ]; then echo "Off day"; exit 1; fi
+
       - uses: actions/checkout@v4
 
       - name: Kokoro voice model (cached)
