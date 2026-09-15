@@ -1,0 +1,29 @@
+{
+ "title": "The lead that books itself",
+ "steps": [
+  {"kind":"trigger","label":"New Enquiry","sub":"website form","app":"","icon":"form","pill":"Website Enquiry",
+   "say":"A new enquiry just landed on your website. It's 9:47 at night.",
+   "card":{"head":"New enquiry · 9:47 pm","title":"Daniel Reyes","lines":["14 Oak Avenue · 3 bed"],"quote":"Still available? We're pre-approved."}},
+  {"kind":"agent","label":"AI Agent","sub":"Lead Qualifier","app":"","icon":"robot","pill":"AI Qualifier",
+   "say":"Before anyone on your team sees it, an AI agent reads it, checks the fit, and scores it.",
+   "tools":[{"label":"OpenAI Chat","app":"openai"},{"label":"Buyer History","icon":"db"},{"label":"Get Listings","sub":"read: sheet","app":"sheets"}],
+   "card":{"tags":["Pre-approved ✓","Buying in 60 days ✓"],"score":91}},
+  {"kind":"if","label":"Ready to buy?","sub":"score > 70","app":"","icon":"iff","pill":"Ready to buy?",
+   "say":"Ready buyers go one way. Early browsers go into a gentle nurture sequence, so nobody gets dropped.",
+   "branch":{"label":"Nurture Sequence","sub":"early browsers","app":"hubspot","note":"gentle nurture emails"}},
+  {"kind":"action","label":"Create Contact","sub":"HubSpot","app":"hubspot","pill":"HubSpot CRM",
+   "say":"Your CRM is updated with everything. No copy and paste.",
+   "card":{"title":"Daniel Reyes · Hot lead","lines":["Property: 14 Oak Avenue","Budget: Pre-approved","Source: Website form"]}},
+  {"kind":"action","label":"Personal Reply","sub":"Gmail","app":"gmail","pill":"Personal Reply",
+   "say":"Within a minute, Daniel gets a personal reply about the exact home he asked about.",
+   "card":{"to":"Daniel Reyes · Re: 14 Oak Avenue","message":"Hi Daniel, thanks for asking about 14 Oak Avenue. Yes, it's still available. Inspections run Saturday 10:30 and Tuesday 5:30.","button":"📅 Book an inspection"}},
+  {"kind":"action","label":"Alert Agent","sub":"Slack","app":"slack","pill":"Agent Alerted",
+   "say":"He books, and your agent gets a message with the full story before the inspection starts.",
+   "card":{"head":"#sales","title":"Daniel booked 14 Oak Ave, Sat 10:30","lines":["Pre-approved · score 91"]}}
+ ],
+ "overview_say": "Every step, running on its own, day and night, while your team works on the deals that matter.",
+ "stat": {"line1":"20 enquiries a week × 15 min","value":5,"unit":"hours back","line3":"every single week",
+          "say":"Say twenty enquiries a week at fifteen minutes each. That is five hours back, every week."},
+ "caption": "An enquiry lands at 9:47 pm. By morning, the inspection is booked.",
+ "hashtags": "#realestate #automation"
+}

@@ -1,0 +1,9 @@
+case-data.js
+case-*.wav
+case-*.mp4
+case-*.json
+!sample-case.json
+case-caption.txt
+.frames-case/
+kokoro/
+__pycache__/

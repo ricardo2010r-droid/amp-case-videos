@@ -1,0 +1,240 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Case video</title>
+<!-- Data-driven version of lead-flow.html. Draws whatever case-data.js holds
+     (window.CASE, written by case.py). ?t=SECONDS freezes a frame, ?v=1 is 9:16. -->
+<style>
+html,body{margin:0;background:#1f1f1f;overflow:hidden;font-family:"Inter","Segoe UI",system-ui,sans-serif}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:#262626;
+  background-image:radial-gradient(#3d3d3d 1.4px,transparent 1.6px)}
+#world{position:absolute;left:0;top:0;width:10px;height:10px;transform-origin:0 0}
+#edges{position:absolute;left:0;top:0;overflow:visible}
+.node{position:absolute;box-sizing:border-box;background:#2f3033;border:2px solid #56575b;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px #0006}
+.node.trig{border-radius:48px 14px 14px 48px}
+.node.circ{border-radius:50%}
+.node.run{border-color:#ff9b3d;box-shadow:0 0 0 4px #ff9b3d33,0 0 30px #ff9b3d55}
+.node.done{border-color:#3ee07f;box-shadow:0 0 0 3px #3ee07f22,0 6px 20px #0006}
+.node.dim{opacity:.35}
+.badge{width:64px;height:64px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center}
+.circ .badge{border-radius:50%;width:58px;height:58px}
+.gen svg{stroke:#e8e8e8;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.lbl{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:12px;white-space:nowrap;text-align:center;
+  color:#f1f1f1;font-size:19px;font-weight:600}
+.lbl small{display:block;color:#9a9a9a;font-size:14px;font-weight:400;margin-top:2px}
+.wide .inner{display:flex;align-items:center;gap:16px;color:#fff;font-size:24px;font-weight:700}
+.wide .inner small{display:block;font-size:15px;color:#aaa;font-weight:400}
+.chk{position:absolute;right:-12px;top:-12px;width:30px;height:30px;border-radius:50%;background:#3ee07f;color:#0b2b16;
+  font-weight:900;font-size:19px;display:none;align-items:center;justify-content:center}
+.done .chk{display:flex}
+.bolt{position:absolute;left:-34px;top:50%;transform:translateY(-50%);color:#ff6d5a;font-size:30px}
+.spin{position:absolute;right:-13px;top:-13px;width:26px;height:26px;box-sizing:border-box;border-radius:50%;border:4px solid #5a3a1a;border-top-color:#ff9b3d;background:#2f3033;display:none}
+.run .spin{display:block}
+.item{position:absolute;transform:translate(-50%,-150%);font-size:14px;color:#3ee07f;font-weight:600;white-space:nowrap}
+.pill{position:absolute;transform:translate(-50%,-50%);background:#0b0d0b;border:2px solid #4a4a4a;border-radius:22px;
+  padding:14px 34px;color:#3ee07f;font-size:58px;font-weight:800;white-space:nowrap;letter-spacing:-.5px;box-shadow:0 12px 40px #000a}
+.card{position:absolute;transform:translate(-50%,-100%);background:#1b1c1e;border:1px solid #4a4b4f;border-radius:14px;
+  padding:16px 20px;color:#eee;font-size:18px;line-height:1.45;box-shadow:0 16px 40px #000b;white-space:nowrap}
+.card.below{transform:translate(-50%,0)}
+.card b{color:#fff}.card .m{color:#9a9a9a;font-size:15px}.card .g{color:#3ee07f;font-weight:700}
+.tag{display:inline-block;background:#173323;color:#3ee07f;border:1px solid #2c6b45;border-radius:999px;padding:4px 14px;margin:4px 6px 0 0;font-weight:600}
+#cursor{position:absolute;left:0;top:0;width:44px;height:44px;pointer-events:none}
+.ripple{position:absolute;border:3px solid #3ee07f;border-radius:50%;transform:translate(-50%,-50%)}
+#sub{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);max-width:1500px;text-align:center;
+  background:#000000b8;color:#fff;font-size:36px;font-weight:500;line-height:1.35;padding:14px 30px;border-radius:14px}
+#screen{position:absolute;inset:0;pointer-events:none}
+#count{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);background:#0b0d0bee;border:2px solid #3ee07f;
+  border-radius:26px;padding:40px 70px;text-align:center;color:#bbb;font-size:40px}
+#count b{display:block;color:#3ee07f;font-size:110px;line-height:1.1;font-weight:800}
+#end{position:absolute;inset:0;background:#141517;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px}
+#end .brand{display:flex;align-items:center;gap:26px;color:#fff;font-size:72px;font-weight:800}
+#end .brand small{color:#22D3EE;font-size:30px;letter-spacing:8px;display:block;font-weight:700}
+#end .cta{background:#3ee07f;color:#08210f;font-size:44px;font-weight:800;padding:20px 60px;border-radius:999px}
+.vert #stage{width:1080px;height:1920px}
+.vert #sub{bottom:300px;width:940px;max-width:940px;font-size:44px;box-sizing:border-box}
+.vert #count{top:42%;padding:40px 40px;font-size:36px;white-space:nowrap}
+.vert #end .brand{font-size:60px}
+</style>
+<div id="stage">
+  <div id="world"><svg id="edges" width="10" height="10"></svg></div>
+  <div id="screen">
+    <div id="count"><span id="c1"></span><b id="hrs"></b><span id="c3"></span></div>
+    <div id="end">
+      <div class="brand">
+        <svg width="150" height="150" viewBox="0 0 120 120" fill="none">
+          <g stroke="#22D3EE" stroke-width="2.4" opacity=".62">
+          <line x1="60" y1="18" x2="96.37" y2="39"/><line x1="60" y1="18" x2="96.37" y2="81"/><line x1="60" y1="18" x2="60" y2="102"/><line x1="60" y1="18" x2="23.63" y2="81"/><line x1="60" y1="18" x2="23.63" y2="39"/><line x1="60" y1="60" x2="60" y2="18"/><line x1="96.37" y1="39" x2="96.37" y2="81"/><line x1="96.37" y1="39" x2="60" y2="102"/><line x1="96.37" y1="39" x2="23.63" y2="81"/><line x1="96.37" y1="39" x2="23.63" y2="39"/><line x1="60" y1="60" x2="96.37" y2="39"/><line x1="96.37" y1="81" x2="60" y2="102"/><line x1="96.37" y1="81" x2="23.63" y2="81"/><line x1="96.37" y1="81" x2="23.63" y2="39"/><line x1="60" y1="60" x2="96.37" y2="81"/><line x1="60" y1="102" x2="23.63" y2="81"/><line x1="60" y1="102" x2="23.63" y2="39"/><line x1="60" y1="60" x2="60" y2="102"/><line x1="23.63" y1="81" x2="23.63" y2="39"/><line x1="60" y1="60" x2="23.63" y2="81"/><line x1="60" y1="60" x2="23.63" y2="39"/></g>
+          <g fill="#0E7C8C"><circle cx="60" cy="18" r="7.5"/><circle cx="96.37" cy="39" r="7.5"/><circle cx="96.37" cy="81" r="7.5"/><circle cx="60" cy="102" r="7.5"/><circle cx="23.63" cy="81" r="7.5"/><circle cx="23.63" cy="39" r="7.5"/></g>
+          <circle cx="60" cy="60" r="13" fill="#22D3EE" opacity=".2"/><circle cx="60" cy="60" r="9.5" fill="#22D3EE"/>
+        </svg>
+        <div>Automation Matrix<small>PRO</small></div>
+      </div>
+      <div class="cta">Let's chat</div>
+    </div>
+    <div id="sub"></div>
+  </div>
+</div>
+<script src="apps.js"></script>
+<script src="case-data.js"></script>
+<script>
+const $=id=>document.getElementById(id), C=window.CASE;
+const Q=new URLSearchParams(location.search), FIXED=Q.has("t"), VERT=Q.has("v");
+if(VERT)document.documentElement.classList.add("vert");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+const win=(t,a,b,f=.45)=>ease((t-a)/f)*(1-ease((t-(b-f))/f));
+function track(K,t){
+  if(t<=K[0][0])return K[0].slice(1);
+  for(let i=1;i<K.length;i++)if(t<=K[i][0]){const a=K[i-1],b=K[i],k=ease((t-a[0])/(b[0]-a[0]||1));return a.slice(1).map((v,j)=>v+(b[j+1]-v)*k)}
+  return K[K.length-1].slice(1);
+}
+
+/* ---------- icons ---------- */
+const GEN={
+ form:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+ robot:'<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4.5V8M9 13v1M15 13v1"/><circle cx="12" cy="3.5" r="1"/>',
+ iff:'<path d="M3 12h6l4-6h8M9 12l4 6h8"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ db:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+ chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+ cart:'<path d="M3 4h2l2 12h11l2-8H6"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/>',
+ doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+ phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+ calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+ star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+ chart:'<path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/>'};
+function icon(o,s){ // a real brand mark when the app is known, else a generic line icon
+  const a=o.app&&window.APPS&&APPS[o.app];
+  if(a)return `<div class="badge"><svg width="${s*.72}" height="${s*.72}" viewBox="0 0 24 24">${a.d.map(d=>`<path fill="${a.c}" d="${d}"/>`).join("")}</svg></div>`;
+  return `<div class="gen"><svg width="${s}" height="${s}" viewBox="0 0 24 24">${GEN[o.icon]||GEN.doc}</svg></div>`;
+}
+
+/* ---------- layout, all derived from the step list ---------- */
+const Y=430, S=C.steps, NS="http://www.w3.org/2000/svg";
+let x=300;
+S.forEach((s,i)=>{
+  if(i)x+=(s.kind==="agent"||S[i-1].kind==="agent")?460:360;
+  s.x=x;s.w=s.kind==="agent"?330:120;s.h=s.kind==="agent"?130:120;
+});
+const WORLD_W=x+300;
+$("world").style.width=WORLD_W+"px";$("edges").setAttribute("width",WORLD_W);$("edges").setAttribute("height",1200);
+const W=$("world"),SV=$("edges"),NODES=[],EDGES=[],CARDS=[];
+function node(o,x,y,w,h,cls,html){
+  const d=document.createElement("div");d.className="node "+cls;
+  Object.assign(d.style,{left:x-w/2+"px",top:y-h/2+"px",width:w+"px",height:h+"px"});
+  d.innerHTML=html+`<div class="chk">✓</div><div class="spin"></div>`+(cls==="trig"?`<div class="bolt">⚡</div>`:"");
+  W.appendChild(d);o.el=d;NODES.push(o);return d;
+}
+const lbl=(l,s)=>`<div class="lbl">${esc(l)}${s?`<small>${esc(s)}</small>`:""}</div>`;
+function edge(path,a,b,dashed,text){
+  const p=document.createElementNS(NS,"path");p.setAttribute("d",path);p.setAttribute("fill","none");
+  p.setAttribute("stroke-width",dashed?2.5:3.5);if(dashed)p.setAttribute("stroke-dasharray","9 8");SV.appendChild(p);
+  const dot=document.createElementNS(NS,"circle");dot.setAttribute("r",9);dot.setAttribute("fill","#bfffd6");
+  dot.setAttribute("style","filter:drop-shadow(0 0 10px #3ee07f)");SV.appendChild(dot);
+  const it=document.createElement("div");it.className="item";it.textContent=text==null?"1 item":text;W.appendChild(it);
+  const len=p.getTotalLength(),mid=p.getPointAtLength(len/2);Object.assign(it.style,{left:mid.x+"px",top:mid.y+"px"});
+  const e={p,dot,it,len,a,b};EDGES.push(e);return e;
+}
+const hz=(a,b)=>{const dx=Math.max(60,(b[0]-a[0])/2);return `M${a[0]} ${a[1]}C${a[0]+dx} ${a[1]} ${b[0]-dx} ${b[1]} ${b[0]} ${b[1]}`};
+function card(a,b,x,y,html,below,typing){
+  const d=document.createElement("div");d.className="card"+(below?" below":"");d.style.left=x+"px";d.style.top=y+"px";
+  d.innerHTML=html;W.appendChild(d);const c={a,b,el:d,typing};CARDS.push(c);return c;
+}
+function cardHtml(c){
+  if(!c)return "";
+  let h="";
+  if(c.head)h+=`<div class="m">${esc(c.head)}</div>`;
+  if(c.title)h+=`<b>${esc(c.title)}</b><br>`;
+  (c.lines||[]).forEach(l=>{const k=String(l).indexOf(":");
+    h+=k>0?`<span class="m">${esc(l.slice(0,k))}</span> ${esc(l.slice(k+1).trim())}<br>`:`${esc(l)}<br>`});
+  if(c.quote)h+=`<span class="m">“${esc(c.quote)}”</span><br>`;
+  if(c.score!=null)h+=`<span class="m">Score</span> <span class="g" style="font-size:30px">${esc(c.score)}</span><span class="m">/100</span><br>`;
+  (c.tags||[]).forEach(t=>h+=`<span class="tag">${esc(t)}</span>`);
+  return h.replace(/<br>$/,"");
+}
+
+/* ---------- timeline, from the scene windows case.py measured off the voice ---------- */
+const T=C.timing, TOTAL=C.dur;
+S.forEach((s,i)=>{
+  const [a,b]=T[i], d=b-a, done=Math.max(a+2.4,a+.6*d);
+  Object.assign(s,{a,b,done,run:[a+1.8,done]});
+  const cls=s.kind==="trigger"?"trig":s.kind==="agent"?"wide":"";
+  if(s.kind==="agent")node(s,s.x,Y,s.w,s.h,"wide",`<div class="inner">${icon({icon:"robot"},58)}<div>${esc(s.label)}<small>${esc(s.sub)}</small></div></div>`);
+  else node(s,s.x,Y,s.w,s.h,cls,icon(s,54)+lbl(s.label,s.sub));
+  if(i){const p=S[i-1];edge(hz([p.x+p.w/2,Y],[s.x-s.w/2,Y]),a+.8,a+1.8)}
+  s.pillEl=document.createElement("div");s.pillEl.className="pill";s.pillEl.textContent=s.pill||s.label;
+  Object.assign(s.pillEl.style,{left:s.x+"px",top:"150px"});W.appendChild(s.pillEl);
+  if(s.kind==="agent"){
+    const tools=(s.tools||[]).slice(0,3), n=tools.length;
+    tools.forEach((t,j)=>{
+      const tx=s.x+(j-(n-1)/2)*170, st=a+1.8+j*.8, o={done:st+.6};
+      node(o,tx,760,104,104,"circ",icon(t,44)+lbl(t.label,t.sub));
+      edge(`M${tx} 708C${tx} 600 ${tx} 560 ${tx} ${Y+65}`,st,st+.6,1,"");
+    });
+  }
+  if(s.kind==="if"&&s.branch&&S[i+1]){
+    const bx=S[i+1].x, o={done:done+1.2,dimUntil:done};
+    node(o,bx,730,120,120,"",icon(s.branch,54)+lbl(s.branch.label,s.branch.sub));
+    edge(hz([s.x+60,Y+24],[bx-60,730]),done,done+1.2,0,"false");
+    if(s.branch.note)card(done+.6,b,bx+230,690,`<span class="m">${esc(s.branch.label)}</span><br><b>${esc(s.branch.note)}</b>`,1);
+  }
+  const cd=s.card;
+  if(cd&&cd.message)card(a+1.0,b,s.x,330,"",0,{to:cd.to,msg:cd.message,btn:cd.button,a:a+1.4,b:a+.75*d});
+  else if(cd)card(s.kind==="trigger"?a+.3:a+1.0,b,s.x,330,cardHtml(cd));
+});
+const OV=T[S.length], ST=T[S.length+1], OUT=T[S.length+2];
+
+// camera: dwell on each step, then the overview
+const SC=VERT?1.45:1.05, CY=560;
+const CAM=[[0,S[0].x+(VERT?0:200),CY,SC]];
+S.forEach((s,i)=>{const cx=s.x+(VERT?0:(s.kind==="if"&&s.branch?120:0));CAM.push([s.a,CAM[CAM.length-1][1],CY,SC],[s.a+.9,cx,CY,SC],[s.b,cx,CY,SC])});
+const FIT=Math.min(1,1800/WORLD_W), MIDX=WORLD_W/2;
+if(VERT)CAM.push([OV[0]+1.5,S[0].x,600,.8],[ST[0]+.01,S[S.length-1].x,600,.8],[TOTAL,S[S.length-1].x,600,.8]);
+else CAM.push([OV[0]+1.5,MIDX,560,FIT],[TOTAL,MIDX,540,FIT*.96]);
+const CUR=[[0,S[0].x+220,640]], CLICKS=[];
+S.forEach(s=>{const p=CUR[CUR.length-1];CUR.push([s.a,p[1],p[2]],[s.a+.6,s.x+30,Y+40]);CLICKS.push(s.a+.7)});
+
+const cur=document.createElement("div");cur.id="cursor";
+cur.innerHTML='<svg width="44" height="44" viewBox="0 0 24 24"><path d="M4 2l15 11-7 1 4 8-3 1-4-8-5 5z" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+W.appendChild(cur);
+const rip=document.createElement("div");rip.className="ripple";W.appendChild(rip);
+$("c1").textContent=C.stat.line1;$("c3").textContent=C.stat.line3;
+
+function render(t){
+  const [cx,cy,s]=track(CAM,t);
+  const tx=(VERT?540:960)-cx*s,ty=(VERT?960:540)-cy*s;
+  W.style.transform=`translate(${tx}px,${ty}px) scale(${s})`;
+  $("stage").style.backgroundSize=`${26*s}px ${26*s}px`;$("stage").style.backgroundPosition=`${tx}px ${ty}px`;
+  NODES.forEach(n=>{
+    n.el.classList.toggle("done",t>=n.done);
+    n.el.classList.toggle("run",!!n.run&&t>=n.run[0]&&t<n.run[1]);
+    n.el.querySelector(".spin").style.transform=`rotate(${t*400}deg)`;
+    if(n.dimUntil!=null)n.el.classList.toggle("dim",t<n.dimUntil)});
+  const loopAll=t>=OV[0]&&t<OUT[0];
+  EDGES.forEach((e,i)=>{const on=t>=e.a;
+    e.p.setAttribute("stroke",t>=e.b?"#3ee07f":on?"#8fe8b0":"#6b6b6b");
+    let k=(t-e.a)/(e.b-e.a);
+    if(loopAll)k=((t-OV[0])*.55+i*.21)%1;
+    const show=loopAll||(k>0&&k<1);e.dot.setAttribute("opacity",show?1:0);
+    if(show){const q=e.p.getPointAtLength(e.len*k);e.dot.setAttribute("cx",q.x);e.dot.setAttribute("cy",q.y)}
+    e.it.style.opacity=t>=e.b?1:0});
+  S.forEach(st=>{const v=win(t,st.a+.6,st.b);st.pillEl.style.opacity=v;st.pillEl.style.display=v>0?"":"none";
+    st.pillEl.style.transform=`translate(-50%,-50%) scale(${.7+.3*ease((t-st.a-.6)/.35)})`});
+  CARDS.forEach(c=>{const v=win(t,c.a,c.b);c.el.style.opacity=v;c.el.style.display=v>0?"":"none";
+    if(c.typing&&v>0){const y=c.typing,n=Math.floor(y.msg.length*ease((t-y.a)/(y.b-y.a)));
+      c.el.innerHTML=`<div class="m">To: ${esc(y.to)}</div><div style="white-space:normal;width:480px">${esc(y.msg.slice(0,n))}${t<y.b?'<b style="color:#3ee07f">|</b>':''}</div>${t>=y.b&&y.btn?`<div style="margin-top:8px"><span class="tag">${esc(y.btn)}</span></div>`:''}`}});
+  const [ux,uy]=track(CUR,t);Object.assign(cur.style,{transform:`translate(${ux}px,${uy}px)`,opacity:1-ease((t-OV[0])/.6)});
+  const c=CLICKS.find(c=>t>=c&&t<c+.55);
+  if(c!==undefined){const k=(t-c)/.55;Object.assign(rip.style,{left:ux+4+"px",top:uy+4+"px",width:20+70*k+"px",height:20+70*k+"px",opacity:1-k})}else rip.style.opacity=0;
+  const sl=C.lines.findIndex((l,i)=>t>=T[i][0]&&t<T[i][1]);
+  $("sub").textContent=sl>=0?C.lines[sl]:"";$("sub").style.opacity=sl>=0?win(t,T[sl][0],T[sl][1],.25):0;
+  $("sub").style.display=sl===S.length+2?"none":"";
+  $("count").style.opacity=win(t,ST[0]+.2,ST[1],.5);$("count").style.transform=`translate(-50%,-50%) scale(${.85+.15*ease((t-ST[0]-.2)/.5)})`;
+  $("hrs").textContent=Math.round(C.stat.value*ease((t-ST[0]-1)/2.5))+" "+C.stat.unit;
+  $("end").style.opacity=ease((t-OUT[0])/1.2);
+}
+if(FIXED)render(+Q.get("t"));
+else{const t0=performance.now(),st=+(Q.get("from")||0);(function f(){render(Math.min(TOTAL,st+(performance.now()-t0)/1000));requestAnimationFrame(f)})()}
+</script>

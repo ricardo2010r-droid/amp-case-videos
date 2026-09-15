@@ -1,0 +1,77 @@
+name: Daily case video
+
+# One voiced case video a day. Rendered here (public repo, free minutes), then
+# the site emails an approval link. Nothing posts until that link is clicked,
+# so GitHub's late-running crons do not matter.
+on:
+  schedule:
+    - cron: '0 19 * * *'   # 05:00 Brisbane, waiting in the inbox by morning
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Render only, no upload, no email'
+        type: boolean
+        default: false
+
+concurrency:
+  group: case-video
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # history.txt records titles so cases do not repeat
+
+jobs:
+  case:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kokoro voice model (cached)
+        id: kokoro
+        uses: actions/cache@v4
+        with:
+          path: kokoro
+          key: kokoro-v1.0
+
+      - name: Download Kokoro model
+        if: steps.kokoro.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p kokoro
+          base=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
+          curl -sSfL -o kokoro/kokoro-v1.0.onnx "$base/kokoro-v1.0.onnx"
+          curl -sSfL -o kokoro/voices-v1.0.bin "$base/voices-v1.0.bin"
+
+      - name: Tools
+        run: |
+          command -v google-chrome >/dev/null || { echo "google-chrome missing"; exit 1; }
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
+          pip install --quiet pillow kokoro-onnx soundfile numpy
+
+      - name: Write, voice, render, send for approval
+        env:
+          AMP_SITE: ${{ secrets.AMP_SITE }}
+          AMP_KEY: ${{ secrets.AMP_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CHROME_BIN: /usr/bin/google-chrome
+          KOKORO_DIR: kokoro
+        run: python case.py ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: Record the title
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name "case-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add history.txt
+          git commit -m "Case video $(date -u +%F)" && git push || echo "nothing to record"
+
+      - name: Keep the video for a week
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: case-video
+          path: |
+            case-*.mp4
+            case-caption.txt
+          retention-days: 7
+          if-no-files-found: ignore

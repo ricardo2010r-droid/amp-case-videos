@@ -1,0 +1,7 @@
+# The runner is Linux. CRLF in a shell script gives "bad interpreter".
+*.sh   text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.js   text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
