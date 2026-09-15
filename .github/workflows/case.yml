@@ -25,16 +25,24 @@ permissions:
   contents: write   # history.txt records titles so cases do not repeat
 
 jobs:
+  # Every second day. A */2 cron resets each month (31st then 1st), so count days.
+  # A skipped job is grey, not red, so off days send no failure email.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.d.outputs.go }}
+    steps:
+      - id: d
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] || [ $(( $(date -u +%s) / 86400 % 2 )) -eq 0 ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
+
   case:
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
-      # Every second day. A */2 cron resets each month (31st then 1st), so count days instead.
-      - name: Is today a case day
-        if: github.event_name == 'schedule'
-        run: |
-          if [ $(( $(date -u +%s) / 86400 % 2 )) -ne 0 ]; then echo "Off day"; exit 1; fi
-
       - uses: actions/checkout@v4
 
       - name: Kokoro voice model (cached)
