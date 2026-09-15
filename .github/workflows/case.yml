@@ -12,6 +12,10 @@ on:
         description: 'Render only, no upload, no email'
         type: boolean
         default: false
+      sample:
+        description: 'Use sample-case.json instead of asking Claude'
+        type: boolean
+        default: false
 
 concurrency:
   group: case-video
@@ -55,7 +59,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CHROME_BIN: /usr/bin/google-chrome
           KOKORO_DIR: kokoro
-        run: python case.py ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+        run: python case.py ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }} ${{ github.event.inputs.sample == 'true' && '--case sample-case.json' || '' }}
 
       - name: Record the title
         if: github.event.inputs.dry_run != 'true'
