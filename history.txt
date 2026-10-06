@@ -9,3 +9,4 @@ The burst pipe that dispatches itself
 The candidate that screens itself
 The campaign that writes itself
 The rehab plan that writes itself
+The venue question that answers itself
