@@ -4,8 +4,10 @@ name: Daily case video
 # the site emails an approval link. Nothing posts until that link is clicked,
 # so GitHub's late-running crons do not matter.
 on:
-  schedule:
-    - cron: '0 19 * * *'   # 05:00 Brisbane, waiting in the inbox by morning
+# PAUSED 9 Oct 2026: automatic posting stopped while the business direction changes.
+# The schedule trigger below is commented out. Only manual workflow_dispatch runs now.
+#  schedule:
+#    - cron: '0 19 * * *'   # 05:00 Brisbane, waiting in the inbox by morning
   workflow_dispatch:
     inputs:
       dry_run:
